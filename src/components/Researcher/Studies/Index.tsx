@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from "react"
-import { Box, Icon, Grid, makeStyles, Theme, createStyles } from "@material-ui/core"
+import { Box, Icon, Grid, makeStyles, Theme, createStyles, Fab } from "@material-ui/core"
 import { useSnackbar } from "notistack"
 import Header from "./Header"
 import { useTranslation } from "react-i18next"
-import DeleteStudy from "./DeleteStudy"
-import EditStudy from "./EditStudy"
 import { Service } from "../../DBService/DBService"
+import Pagination from "../../PaginatedElement"
+import StudyItem from "./StudyItem"
+import useInterval from "../../useInterval"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -34,98 +35,103 @@ const useStyles = makeStyles((theme: Theme) =>
     norecords: {
       "& span": { marginRight: 5 },
     },
+    btnWhite: {
+      background: "#fff",
+      borderRadius: "40px",
+      boxShadow: "none",
+      cursor: "pointer",
+      textTransform: "capitalize",
+      fontSize: "14px",
+      color: "#7599FF",
+      "& svg": { marginRight: 8 },
+      "&:hover": { color: "#5680f9", background: "#fff", boxShadow: "0px 3px 5px rgba(0, 0, 0, 0.20)" },
+    },
   })
 )
 
-export default function StudiesList({
-  title,
-  researcher,
-  studies,
-  upatedDataStudy,
-  deletedDataStudy,
-  searchData,
-  newAdddeStudy,
-  ...props
-}) {
+export default function StudiesList({ title, researcher, onStudySelect, ...props }) {
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
   const { t } = useTranslation()
   const [search, setSearch] = useState(null)
-  const [allStudies, setAllStudies] = useState(studies)
-  const [updateCount, setUpdateCount] = useState(0)
-  const [newStudy, setNewStudy] = useState(null)
-  const [studiesData, setStudiesData] = useState(studies)
+  const [paginatedStudies, setPaginatedStudies] = useState([])
+  const [rowCount, setRowCount] = useState(40)
+  const [page, setPage] = useState(0)
+  const [loading, setLoading] = useState(false)
+  const [allStudies, setAllStudies] = useState(null)
+  const [studies, setStudies] = useState(null)
 
-  useEffect(() => {
-    refreshStudies()
-    newAdddeStudy(newStudy)
-  }, [newStudy])
-
-  useEffect(() => {
-    setAllStudies(studies)
-  }, [studies])
-
-  const refreshStudies = () => {
-    Service.getAll("studies").then((data) => {
-      setStudiesData(data || [])
-    })
-  }
-
-  const getAllStudies = async () => {
-    let studies = await Service.getAll("studies")
-    setAllStudies(studies)
-  }
+  useInterval(
+    () => {
+      searchFilterStudies()
+    },
+    allStudies !== null && (allStudies || []).length > 0 ? null : 2000,
+    true
+  )
 
   const searchFilterStudies = async () => {
-    if (!!search && search !== "") {
-      let studiesList: any = await Service.getAll("studies")
-      let newStudies = studiesList.filter((i) => i.name?.toLowerCase()?.includes(search?.toLowerCase()))
-      setAllStudies(newStudies)
-    } else {
-      getAllStudies()
-    }
+    Service.getAll("studies").then((studiesList) => {
+      ;(studiesList || []).sort((a, b) => {
+        return a.name > b.name ? 1 : a.name < b.name ? -1 : 0
+      })
+      setAllStudies(studiesList)
+      let result = []
+      if (!!search && search !== "") {
+        result = (studiesList || []).filter((i) => i.name?.toLowerCase()?.includes(search?.toLowerCase()))
+        setStudies(result)
+      } else {
+        result = studiesList || []
+        setStudies(studiesList)
+      }
+      setPaginatedStudies(result.slice(0, rowCount))
+    })
   }
 
   useEffect(() => {
     searchFilterStudies()
   }, [search])
 
-  const handleUpdatedStudyObject = (data) => {
-    upatedDataStudy(data)
-  }
-
-  const handleDeletedStudy = (data) => {
-    deletedDataStudy(data)
-    searchData(search)
-  }
-
   const handleSearchData = (val) => {
     setSearch(val)
+  }
+
+  const handleChangePage = (page: number, rowCount: number) => {
+    setLoading(true)
+    setRowCount(rowCount)
+    setPage(page)
+    setPaginatedStudies((studies || []).slice(page * rowCount, page * rowCount + rowCount))
+    setLoading(false)
   }
 
   return (
     <React.Fragment>
       <Header
-        studies={studiesData}
+        studies={allStudies}
         researcher={researcher}
         searchData={handleSearchData}
-        setParticipants={searchFilterStudies}
-        setUpdateCount={setUpdateCount}
-        newStudyObj={setNewStudy}
+        setStudies={searchFilterStudies}
       />
       <Box className={classes.tableContainer} py={4}>
         <Grid container spacing={3}>
           {allStudies !== null && allStudies.length > 0 ? (
-            allStudies.map((study) => (
-              <Grid item lg={6} xs={12} key={study.id}>
-                <Box display="flex" p={1} className={classes.studyMain}>
-                  <Box flexGrow={1}>
-                    <EditStudy study={study} upatedDataStudy={handleUpdatedStudyObject} allStudies={allStudies} />
-                  </Box>
-                  <DeleteStudy study={study} deletedStudy={handleDeletedStudy} />
-                </Box>
-              </Grid>
-            ))
+            <Grid container spacing={3}>
+              {paginatedStudies.map((study) => (
+                <Grid item lg={6} xs={12} key={study.id}>
+                  <StudyItem
+                    study={study}
+                    allStudies={allStudies}
+                    onStudySelect={() => onStudySelect(study, researcher.id)}
+                    setStudies={searchFilterStudies}
+                  />
+                </Grid>
+              ))}
+              <Pagination
+                data={allStudies}
+                updatePage={handleChangePage}
+                defaultCount={20}
+                rowPerPage={[20, 40, 60, 80]}
+              />
+            </Grid>
           ) : (
             <Grid item lg={6} xs={12}>
               <Box display="flex" alignItems="center" className={classes.norecords}>

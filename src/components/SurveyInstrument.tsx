@@ -38,7 +38,7 @@ import {
 } from "@material-ui/core"
 import classnames from "classnames"
 import LAMP, { Participant as ParticipantObj } from "lamp-core"
-import { spliceActivity } from "./Researcher/ActivityList/ActivityMethods"
+import { spliceActivity } from "./Researcher/Studies/ActivityList/ActivityMethods"
 import { useSnackbar } from "notistack"
 import Messages from "./Messages"
 import classes from "*.module.css"
@@ -166,6 +166,9 @@ const useStyles = makeStyles((theme) => ({
     [theme.breakpoints.up("md")]: {
       marginTop: 30,
     },
+    [theme.breakpoints.down("sm")]: {
+      minWidth: "140px",
+    },
     "& span": { cursor: "pointer" },
     "&:hover": {
       background: "#92E7CA",
@@ -211,6 +214,9 @@ const useStyles = makeStyles((theme) => ({
     margin: "5% 5px 0 5px",
     [theme.breakpoints.up("md")]: {
       marginTop: 30,
+    },
+    [theme.breakpoints.down("sm")]: {
+      minWidth: "140px",
     },
   },
   ampm: {

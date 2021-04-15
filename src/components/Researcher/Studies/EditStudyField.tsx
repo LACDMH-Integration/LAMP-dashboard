@@ -12,7 +12,6 @@ export default function EditStudyField({
   editStudyName,
   updateName,
   onUpdate,
-  callbackModal,
   allStudies,
   ...props
 }: {
@@ -22,7 +21,6 @@ export default function EditStudyField({
   editStudyName?: any
   updateName?: any
   onUpdate?: any
-  callbackModal?: any
   allStudies?: any
 }) {
   const inputRef = useRef<any>()
@@ -87,7 +85,6 @@ export default function EditStudyField({
               variant: "success",
             }
           )
-        callbackModal()
       })
       .catch((err) =>
         enqueueSnackbar(

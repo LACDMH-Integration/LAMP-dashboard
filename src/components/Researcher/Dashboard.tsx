@@ -12,9 +12,6 @@ import {
   Theme,
   createStyles,
 } from "@material-ui/core"
-import ParticipantList from "./ParticipantList/Index"
-import ActivityList from "./ActivityList/Index"
-import SensorsList from "./SensorsList/Index"
 import StudiesList from "./Studies/Index"
 import { ResponsivePaper } from "../Utils"
 import { ReactComponent as Patients } from "../../icons/Patients.svg"
@@ -123,90 +120,10 @@ export const sortData = (data, studies, key) => {
   })
   return result
 }
-// export interface Study {
-//   id?: string
-//   name?: string
-//   participant_count?: number
-//   activity_count?: number
-//   sensor_count?: number
-// }
-export default function Dashboard({ onParticipantSelect, researcher, ...props }) {
-  const [currentTab, setCurrentTab] = useState(-1)
-  const [studies, setStudies] = useState(null)
-  const [notificationColumn, setNotification] = useState(false)
-  const [selectedStudies, setSelectedStudies] = useState([])
-  const supportsSidebar = useMediaQuery(useTheme().breakpoints.up("md"))
-  const [updatedData, setUpdatedData] = useState(null)
-  const [deletedData, setDeletedData] = useState(null)
-  const [newStudy, setNewStudy] = useState(null)
-  const [search, setSearch] = useState(null)
+
+export default function Dashboard({ onParticipantSelect, researcher, onStudySelect, ...props }) {
   const classes = useStyles()
   const { t } = useTranslation()
-
-  useInterval(
-    () => {
-      getDBStudies()
-    },
-    studies !== null && (studies || []).length > 0 ? null : 2000,
-    true
-  )
-
-  useEffect(() => {
-    if (!!newStudy) getAllStudies()
-  }, [newStudy])
-
-  useEffect(() => {
-    if (updatedData !== null) getAllStudies()
-  }, [updatedData])
-
-  useEffect(() => {
-    if (deletedData !== null) {
-      let newStudies = studies.filter((item) => {
-        if (!!search) {
-          return item?.name?.toLowerCase()?.includes(search?.toLowerCase()) && item.id !== deletedData
-        } else {
-          return item?.id !== deletedData
-        }
-      })
-      setStudies(newStudies)
-    } else {
-      getAllStudies()
-    }
-  }, [deletedData])
-
-  const getDBStudies = async () => {
-    Service.getAll("studies").then((studies) => {
-      setStudies(studies)
-      filterStudies(studies)
-      setCurrentTab(0)
-      Service.getAll("researcher").then((data) => {
-        let researcherNotification = !!data ? data[0]?.notification ?? false : false
-        setNotification(researcherNotification)
-      })
-    })
-  }
-
-  const getAllStudies = async () => {
-    Service.getAll("studies").then((studies) => {
-      setStudies(studies)
-      filterStudies(studies)
-    })
-  }
-
-  const filterStudies = async (studies) => {
-    if (studies !== null && (studies || []).length > 0) {
-      let selected = ((await LAMP.Type.getAttachment(researcher.id, "lamp.selectedStudies")) as any).data ?? []
-      let filtered = selected.filter((o) => studies.some(({ name }) => o === name))
-      selected =
-        selected.length === 0 || filtered.length === 0
-          ? (studies ?? []).map((study) => {
-              return study.name
-            })
-          : filtered
-      selected.sort()
-      setSelectedStudies(selected)
-    }
-  }
 
   return (
     <Container maxWidth={false}>
@@ -217,106 +134,7 @@ export default function Dashboard({ onParticipantSelect, researcher, ...props })
             : classes.tableContainerWidth
         }
       >
-        {!!studies && (
-          <ResponsivePaper elevation={0}>
-            <Drawer
-              anchor={supportsSidebar ? "left" : "bottom"}
-              variant="permanent"
-              classes={{
-                paper: classes.researcherMenu + " " + classes.logResearcher,
-              }}
-            >
-              <List component="nav" className={classes.menuOuter}>
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={currentTab === 0}
-                  onClick={(event) => setCurrentTab(0)}
-                >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <Patients />
-                  </ListItemIcon>
-                  <ListItemText primary={t("Users")} />
-                </ListItem>
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={currentTab === 1}
-                  onClick={(event) => setCurrentTab(1)}
-                >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <Activities />
-                  </ListItemIcon>
-                  <ListItemText primary={t("Activities")} />
-                </ListItem>
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={currentTab === 2}
-                  onClick={(event) => setCurrentTab(2)}
-                >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <Sensors />
-                  </ListItemIcon>
-                  <ListItemText primary={t("Sensors")} />
-                </ListItem>
-                <ListItem
-                  className={classes.menuItems + " " + classes.btnCursor}
-                  button
-                  selected={currentTab === 3}
-                  onClick={(event) => setCurrentTab(3)}
-                >
-                  <ListItemIcon className={classes.menuIcon}>
-                    <Studies />
-                  </ListItemIcon>
-                  <ListItemText primary={t("Studies")} />
-                </ListItem>
-              </List>
-            </Drawer>
-            {currentTab === 0 && (
-              <ParticipantList
-                title={null}
-                onParticipantSelect={onParticipantSelect}
-                researcher={researcher}
-                studies={studies}
-                notificationColumn={notificationColumn}
-                selectedStudies={selectedStudies}
-                setSelectedStudies={setSelectedStudies}
-                getAllStudies={getAllStudies}
-                newAdddeStudy={setNewStudy}
-              />
-            )}
-            {currentTab === 1 && (
-              <ActivityList
-                title={null}
-                researcher={researcher}
-                studies={studies}
-                selectedStudies={selectedStudies}
-                setSelectedStudies={setSelectedStudies}
-              />
-            )}
-            {currentTab === 2 && (
-              <SensorsList
-                title={null}
-                researcher={researcher}
-                studies={studies}
-                selectedStudies={selectedStudies}
-                setSelectedStudies={setSelectedStudies}
-              />
-            )}
-            {currentTab === 3 && (
-              <StudiesList
-                title={null}
-                researcher={researcher}
-                studies={studies}
-                upatedDataStudy={(data) => setUpdatedData(data)}
-                deletedDataStudy={(data) => setDeletedData(data)}
-                searchData={(data) => setSearch(data)}
-                newAdddeStudy={setNewStudy}
-              />
-            )}
-          </ResponsivePaper>
-        )}
+        <StudiesList title={null} researcher={researcher} onStudySelect={onStudySelect} />
       </Container>
     </Container>
   )

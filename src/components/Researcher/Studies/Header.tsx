@@ -1,8 +1,8 @@
 import React, { useState } from "react"
 import { Box, Popover, Fab, Typography, Icon, MenuItem, makeStyles, Theme, createStyles } from "@material-ui/core"
 import { useTranslation } from "react-i18next"
-import PatientStudyCreator from "../ParticipantList/PatientStudyCreator"
 import SearchBox from "../../SearchBox"
+import AddButton from "./AddButton"
 
 const useStyles = makeStyles((theme: Theme) =>
   createStyles({
@@ -62,31 +62,9 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function Header({
-  studies,
-  researcher,
-  searchData,
-  setUpdateCount,
-  setParticipants,
-  newStudyObj,
-  ...props
-}) {
+export default function Header({ studies, researcher, searchData, setStudies, ...props }) {
   const classes = useStyles()
   const { t } = useTranslation()
-  const [popover, setPopover] = useState(null)
-  const [addParticipantStudy, setAddParticipantStudy] = useState(false)
-
-  const handleNewStudyData = (data) => {
-    setUpdateCount(1)
-    setParticipants()
-    newStudyObj(data)
-  }
-
-  const handleClosePopUp = (data) => {
-    if (data === 1) {
-      setAddParticipantStudy(false)
-    }
-  }
 
   return (
     <Box>
@@ -98,51 +76,8 @@ export default function Header({
           <SearchBox searchData={searchData} />
         </Box>
         <Box>
-          <Fab
-            variant="extended"
-            color="primary"
-            classes={{ root: classes.btnBlue + " " + (!!popover ? classes.popexpand : "") }}
-            onClick={(event) => setPopover(event.currentTarget)}
-          >
-            <Icon>add</Icon> <span className={classes.addText}>{t("Add")}</span>
-          </Fab>
+          <AddButton researcher={researcher} studies={studies} setStudies={setStudies} />
         </Box>
-        <Popover
-          classes={{ root: classes.customPopover, paper: classes.customPaper }}
-          open={!!popover ? true : false}
-          anchorPosition={!!popover && popover.getBoundingClientRect()}
-          anchorReference="anchorPosition"
-          onClose={() => setPopover(null)}
-          anchorOrigin={{
-            vertical: "bottom",
-            horizontal: "right",
-          }}
-          transformOrigin={{
-            vertical: "top",
-            horizontal: "right",
-          }}
-        >
-          <React.Fragment>
-            <MenuItem
-              onClick={() => {
-                setPopover(null)
-                setAddParticipantStudy(true)
-              }}
-            >
-              <Typography variant="h6">{t("Add a new study")}</Typography>
-              <Typography variant="body2">{t("Create a new study.")}</Typography>
-            </MenuItem>
-          </React.Fragment>
-        </Popover>
-
-        <PatientStudyCreator
-          studies={studies}
-          researcher={researcher}
-          onClose={() => setAddParticipantStudy(false)}
-          open={addParticipantStudy}
-          handleNewStudy={handleNewStudyData}
-          closePopUp={handleClosePopUp}
-        />
       </Box>
     </Box>
   )

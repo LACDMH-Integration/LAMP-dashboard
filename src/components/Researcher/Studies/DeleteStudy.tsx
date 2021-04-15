@@ -40,35 +40,27 @@ const useStyles = makeStyles((theme: Theme) =>
   })
 )
 
-export default function DeleteStudy({ study, deletedStudy, ...props }) {
+export default function DeleteStudy({ study, setStudies, ...props }) {
   const { enqueueSnackbar } = useSnackbar()
   const classes = useStyles()
   const { t } = useTranslation()
-  const [loading, setLoading] = useState(true)
   const [openDialogDeleteStudy, setOpenDialogDeleteStudy] = useState(false)
-  const [studyIdDelete, setStudyIdForDelete] = useState("")
 
-  const deleteStudy = async (studyId: string) => {
+  const deleteStudy = async () => {
     setOpenDialogDeleteStudy(false)
-    await LAMP.Study.delete(studyId)
+    await LAMP.Study.delete(study.id)
       .then((res) => {
-        Service.delete("studies", [studyId])
-        Service.deleteByKey("participants", [studyId], "study_id")
-        Service.deleteByKey("activities", [studyId], "study_id")
-        Service.deleteByKey("sensors", [studyId], "study_id")
-        deletedStudy(studyId)
-        enqueueSnackbar(t("Successfully deleted study.", { studyId: studyId }), { variant: "success" })
+        Service.delete("studies", [study.id])
+        Service.deleteByKey("participants", [study.id], "study_id")
+        Service.deleteByKey("activities", [study.id], "study_id")
+        Service.deleteByKey("sensors", [study.id], "study_id")
+        setStudies()
+        enqueueSnackbar(t("Successfully deleted study.", { studyId: study.id }), { variant: "success" })
       })
       .catch((error) => {
-        deletedStudy("")
         enqueueSnackbar(t("An error occured while deleting. Please try again."), { variant: "error" })
       })
   }
-
-  const handleCloseDeleteStudy = () => {
-    setOpenDialogDeleteStudy(false)
-  }
-
   return (
     <React.Fragment>
       <Box display="flex" alignItems="center" pl={1}>
@@ -77,10 +69,7 @@ export default function DeleteStudy({ study, deletedStudy, ...props }) {
           color="primary"
           disabled={study.id > 1 ? true : false}
           classes={{ root: classes.btnWhite, disabled: classes.disabledButton }}
-          onClick={() => {
-            setOpenDialogDeleteStudy(true)
-            setStudyIdForDelete(study.id)
-          }}
+          onClick={() => setOpenDialogDeleteStudy(true)}
         >
           <Icon>delete_outline</Icon>
         </Fab>
@@ -88,7 +77,7 @@ export default function DeleteStudy({ study, deletedStudy, ...props }) {
 
       <Dialog
         open={openDialogDeleteStudy}
-        onClose={handleCloseDeleteStudy}
+        onClose={() => setOpenDialogDeleteStudy(false)}
         scroll="paper"
         aria-labelledby="alert-dialog-slide-title"
         aria-describedby="alert-dialog-slide-description"
@@ -100,17 +89,11 @@ export default function DeleteStudy({ study, deletedStudy, ...props }) {
           </Box>
           <DialogActions>
             <Box textAlign="center" width={1} mb={3}>
-              <Button onClick={() => deleteStudy(studyIdDelete)} color="primary" autoFocus>
+              <Button onClick={() => deleteStudy()} color="primary" autoFocus>
                 {t("Delete")}
               </Button>
 
-              <Button
-                onClick={() => {
-                  handleCloseDeleteStudy()
-                }}
-              >
-                {t("Cancel")}
-              </Button>
+              <Button onClick={() => setOpenDialogDeleteStudy(false)}>{t("Cancel")}</Button>
             </Box>
           </DialogActions>
         </DialogContent>

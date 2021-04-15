@@ -267,7 +267,9 @@ class DBService {
           while (cursor) {
             if (cursor.key === key) {
               let value = cursor.value
-              value[keyToUpdate] = !!type ? value[keyToUpdate] - (count ?? 1) : value[keyToUpdate] + (count ?? 1)
+              value[keyToUpdate] = !!type
+                ? (value[keyToUpdate] ?? 1) - (count ?? 1)
+                : (value[keyToUpdate] ?? 0) + (count ?? 1)
               cursor.update(value)
             }
             cursor = await cursor.continue()
@@ -306,9 +308,22 @@ class DBService {
     return dbPromise
       .then((db) => {
         const stores = [...db.objectStoreNames]
+        console.log(stores.filter((d) => !d.includes("")))
         stores.map((store) => {
           db.transaction([store], "readwrite").objectStore(store).clear()
         })
+      })
+      .catch((error) => {
+        // Do something?
+      })
+  }
+
+  deleteStudyDB() {
+    return dbPromise
+      .then((db) => {
+        db.transaction("participants", "readwrite").objectStore("participants").clear()
+        db.transaction("activities", "readwrite").objectStore("activities").clear()
+        db.transaction("sensors", "readwrite").objectStore("sensors").clear()
       })
       .catch((error) => {
         // Do something?

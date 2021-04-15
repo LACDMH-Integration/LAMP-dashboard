@@ -17,7 +17,7 @@ import HopeBox from "./HopeBox"
 import TipNotification from "./TipNotification"
 import NotificationPage from "./NotificationPage"
 import { useTranslation } from "react-i18next"
-
+import StudyDashboard from "./Researcher/Studies/StudyDashboard"
 function ErrorFallback({ error }) {
   const [trace, setTrace] = useState([])
   useEffect(() => {
@@ -92,6 +92,7 @@ function AppRouter({ ...props }) {
   const storeRef = useRef([])
   const [showDemoMessage, setShowDemoMessage] = useState(true)
   const { t } = useTranslation()
+  const [selectedStudy, setSelectedStudy] = useState(null)
 
   useEffect(() => {
     let query = window.location.hash.split("?")
@@ -242,15 +243,19 @@ function AppRouter({ ...props }) {
     if (!!store.researchers[id]) {
       return store.researchers[id]
     } else if (!storeRef.current.includes(id)) {
-      LAMP.Researcher.view(id).then((x) => {
-        setStore({
-          researchers: { ...store.researchers, [id]: x },
-          participants: store.participants,
+      ;(async () => {
+        await LAMP.Researcher.view(id).then((x) => {
+          setStore({
+            researchers: { ...store.researchers, [id]: x },
+            participants: store.participants,
+          })
+          storeRef.current = [...storeRef.current, id]
+          return x
         })
-      })
-      storeRef.current = [...storeRef.current, id]
+      })()
+    } else {
+      return null
     }
-    return null
   }
 
   let getParticipant = (id) => {
@@ -377,13 +382,45 @@ function AppRouter({ ...props }) {
       />
       <Route
         exact
-        path="/participant/:id/tip"
-        render={(props) => (
-          <React.Fragment>
-            <PageTitle>mindLAMP | {t("Hope Box")}</PageTitle>
-            <TipNotification goBack={props.history.goBack} />
-          </React.Fragment>
-        )}
+        path="/researcher/:resId/study/:id"
+        render={(props) =>
+          !state.identity ? (
+            <React.Fragment>
+              <PageTitle>mindLAMP | {t("Login")}</PageTitle>
+              <Login
+                setIdentity={async (identity) => await reset(identity)}
+                lastDomain={state.lastDomain}
+                onComplete={() => props.history.replace("/")}
+              />
+            </React.Fragment>
+          ) : (
+            <React.Fragment>
+              <PageTitle>{`${getResearcher(props.match.params.resId)?.name ?? ""}`}</PageTitle>
+              <NavigationLayout
+                authType={state.authType}
+                id={props.match.params.resId}
+                title={`${getResearcher(props.match.params.resId)?.name ?? ""}`}
+                goBack={props.history.goBack}
+                onLogout={() => reset()}
+                activeTab="Studies"
+                sameLineTitle={true}
+              >
+                <StudyDashboard
+                  id={props.match.params.id}
+                  study={selectedStudy}
+                  researcher={getResearcher(props.match.params.resId)}
+                  onParticipantSelect={(id) => {
+                    setState((state) => ({
+                      ...state,
+                      activeTab: 3,
+                    }))
+                    props.history.push(`/participant/${id}`)
+                  }}
+                />
+              </NavigationLayout>
+            </React.Fragment>
+          )
+        }
       />
       {/* Route index => login or home (which redirects based on user type). */}
       <Route
@@ -477,6 +514,10 @@ function AppRouter({ ...props }) {
                       activeTab: 3,
                     }))
                     props.history.push(`/participant/${id}`)
+                  }}
+                  onStudySelect={(study, resId) => {
+                    setSelectedStudy(study)
+                    props.history.push(`/researcher/${resId}/study/${study.id}`)
                   }}
                 />
               </NavigationLayout>
